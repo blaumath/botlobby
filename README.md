@@ -11,6 +11,7 @@ Before you begin, make sure you have the following installed and ready:
 - **Node.js** (version 22 or newer) – [Download Node.js](https://nodejs.org/)
 - A valid **[FNLB API Token](https://app.fnlb.net/account)** – required to authenticate with FNLB services
 - *(Optional)* **[Bun](https://bun.sh)** – A fast JavaScript runtime that can be used as an alternative to Node.js
+- *(Optional)* **[Docker](https://docs.docker.com/get-docker/)** – Run FNLB in a container without installing Node.js or Bun locally
 
 ---
 
@@ -69,7 +70,8 @@ CLUSTER_NAME=Self Hosted Cluster
 ```
 
 > 💡 **API Token:** Obtain this from your [FNLB Account](https://app.fnlb.net/account) under “API Tokens”.  
-> 💡 **Category IDs:** Visit the [FNLB Bots Page](https://app.fnlb.net/bots), select a bot, and locate the **“Category ID”** in the **“About this bot”** section.
+> 💡 **Category IDs:** Visit the [FNLB Bots Page](https://app.fnlb.net/bots), select a bot, and locate the **“Category ID”** in the **“About this bot”** section.  
+> 💡 **Bot IDs:** Use `BOTS` alongside `CATEGORIES` to include specific bots in addition to entire categories. See [Bot and category selection](#-bot-and-category-selection) below.
 
 ---
 
@@ -100,11 +102,34 @@ Below is a breakdown of each environment variable used in the setup:
 | Variable            | Description                                                                 | Default               |
 |---------------------|-----------------------------------------------------------------------------|-----------------------|
 | `API_TOKEN`         | Your personal FNLB API token                                                | *Required*            |
-| `CATEGORIES`        | Comma-separated list of bot category IDs                                    | *Required*            |
+| `CATEGORIES`        | Comma-separated list of bot category IDs                                    | —                     |
+| `BOTS`              | Comma-separated list of bot IDs to include alongside categories             | —                     |
 | `NUMBER_OF_SHARDS`  | Number of individual shards (instances) to spawn                            | `2`                   |
 | `BOTS_PER_SHARD`    | Maximum number of bots assigned to each shard                               | `32`                  |
 | `RESTART_INTERVAL`  | Cluster restart interval in seconds (for stability/maintenance)             | `3600`                |
 | `CLUSTER_NAME`      | The name of the cluster that will appear in the app                         | `Self Hosted Cluster` |
+
+> Omit `CATEGORIES` and `BOTS` to start from your full bot pool. Set either or both to limit which bots are eligible.
+
+---
+
+## 🎯 Bot and Category Selection
+
+`CATEGORIES` and `BOTS` define which bots a shard can pick from. They work as an **include list**.
+
+- **Categories only** - bots in those categories, plus bots without category.
+- **Bots only** - only the listed bot IDs.
+- **Both** - bots from the listed categories **or** the listed bot IDs (union).
+- **Neither** - your full bot pool.
+
+Invalid category or bot IDs are ignored at startup.
+
+Example: start bots from two categories **and** two specific bots from elsewhere:
+
+```ini
+CATEGORIES=category-id-1,category-id-2
+BOTS=bot-id-1,bot-id-2
+```
 
 ---
 
@@ -136,11 +161,57 @@ Ensure you're always using the latest and most stable version of FNLB:
 
    ```bash
    npm start
-   # or
+   # or with Bun
    bun start:bun
+   # or with Docker
+   docker compose up -d --build
    ```
 
 > ✅ Regular updates provide access to new features, performance boosts, and essential bug fixes.
+
+---
+
+## 🐳 Docker
+
+Run FNLB in a container using the multi-stage `Dockerfile`.
+
+### Prerequisites
+
+- [Docker Engine](https://docs.docker.com/engine/install/) or [Docker Desktop](https://docs.docker.com/desktop/)
+- A configured `.env` file (see [Configure Environment Variables](#3-configure-environment-variables))
+
+### Pre-built image
+
+Official images are published to GitHub Container Registry on pushes to the `stable` branch:
+
+```bash
+docker pull ghcr.io/fortnite-lobbybot/self-hosted:latest
+docker run -d --name fnlb --env-file .env --restart unless-stopped ghcr.io/fortnite-lobbybot/self-hosted:latest
+```
+
+### Docker Compose
+
+A `docker-compose.yml` is included for a simpler workflow. From the project root:
+
+1. Create and configure your `.env` file (see above).
+2. Start the cluster in the background:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+View logs:
+
+```bash
+docker compose logs -f
+```
+
+Stop the cluster:
+
+```bash
+docker compose down
+```
 
 ---
 
@@ -152,7 +223,7 @@ Once started, the script performs the following:
 - Configures:
   - Number of **shards** (isolated bot processes)
   - Maximum **bots per shard**
-  - Allowed **category IDs**
+  - Allowed **category IDs** and/or specific **bot IDs**
 - Implements automatic restarts for resilience, using the configured time interval
 
 ---
@@ -161,5 +232,5 @@ Once started, the script performs the following:
 
 - [FNLB Official Site](https://fnlb.net)
 - [FNLB Dashboard](https://app.fnlb.net)
-- [FNLB Documentation ](https://docs.fnlb.net)
-
+- [FNLB Developer Documentation](https://developer-docs.fnlb.net)
+- [FNLB Developer Portal](https://developers.fnlb.net)
